@@ -8,8 +8,8 @@ namespace Pac_Man2._0
 {
     class Pellet
     {
-        int x, y, size;
-        bool powerUp;
+        public int x, y, size;
+        public bool powerUp;
 
         public Pellet(int _x, int _y, int _size, bool _powerUp)
         {

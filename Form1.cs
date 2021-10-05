@@ -20,12 +20,8 @@ namespace Pac_Man2._0
 {
     public partial class Form1 : Form
     {
-        List<Pellet> pellets = new List<Pellet>();
-        List<Character> ghosts = new List<Character>();
-
         public static SolidBrush pacManBrush = new SolidBrush(Color.Yellow);
         public static SolidBrush pelletsBrush = new SolidBrush(Color.PapayaWhip);
-
         public static SoundPlayer backgroundMusic = new SoundPlayer(Properties.Resources.background_music);
 
         public Form1()

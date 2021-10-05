@@ -12,7 +12,36 @@ namespace Pac_Man2._0
 {
     public partial class GameScreen : UserControl
     {
+        List<Pellet> pellets = new List<Pellet>();
+        List<Pellet> turnPoints = new List<Pellet>();
+        //List<Character> ghosts = new List<Character>();
         List<Rectangle> walls = new List<Rectangle>();
+
+        //player control variables
+        bool upArrowDown;
+        bool leftArrowDown;
+        bool downArrowDown;
+        bool rightArrowDown;
+
+        //create characters
+        Character pacMan = new Character();
+        Character blinky = new Character();
+        Character pinky = new Character();
+        Character inky = new Character();
+        Character clyde = new Character();
+        int pacManPreviousX, pacManPreviousY;
+        bool ghostFrightened;
+
+        //game variables
+        public static int score;
+        bool removePellet;
+        public static int energizerTimer;
+
+        //brushes for ghosts and walls
+        SolidBrush blinkyBrush = new SolidBrush(Color.Red);
+        SolidBrush pinkyBrush = new SolidBrush(Color.Pink);
+        SolidBrush inkyBrush = new SolidBrush(Color.LightBlue);
+        SolidBrush clydeBrush = new SolidBrush(Color.Orange);
         SolidBrush wallBrush = new SolidBrush(Color.DodgerBlue);
 
         public GameScreen()
@@ -26,22 +55,478 @@ namespace Pac_Man2._0
         /// </summary>
         public void GameInit()
         {
+            //start music
             Form1.backgroundMusic.Play();
+
+            //reset time and score
+            //score = 0;
+            //time = 850;
+
+            //set up screen objects
             SetWalls();
+            SetTurnPoints();
+            SetPellets();
+            //pellets = pelletsOrigins;
+
+            //set up Pac-Man
+            pacMan = new Character("left", 205, 335, 20, 225, 10, Form1.pacManBrush);
+
+            //set up ghosts
+            blinky = new Character("right", 205, 175, 20, 10, blinkyBrush);
+            pinky = new Character("right", 205, 215, 20, 0, pinkyBrush);
+            inky = new Character("right", 165, 215, 20, 0, inkyBrush);
+            clyde = new Character("right", 245, 215, 20, 0, clydeBrush);
+
+            ghostFrightened = false;
+
+            //StartCountdown();
+
+            gameTimer.Enabled = true;
+        }
+
+        /*/// <summary>
+        /// Displays a countdown from 3 to GO
+        /// </summary>
+        public void StartCountdown()
+        {
+            countDownLabel.Visible = true;
+            countDownLabel.Text = "3";
+            Refresh();
+            Thread.Sleep(1000);
+
+            countDownLabel.Text = "2";
+            Refresh();
+            Thread.Sleep(1000);
+
+            countDownLabel.Text = "1";
+            Refresh();
+            Thread.Sleep(1000);
+
+            countDownLabel.Text = "GO!";
+            Refresh();
+            Thread.Sleep(1000);
+            countDownLabel.Visible = false;
+        }*/
+
+        private void GameScreen_KeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.KeyCode)
+            {
+                /*second player controls case Keys.W:
+                    wDown = true;
+                    break;
+                case Keys.A:
+                    aDown = true;
+                    break;
+                case Keys.S:
+                    sDown = true;
+                    break;
+                case Keys.D:
+                    dDown = true;
+                    break;*/
+                case Keys.Up:
+                    upArrowDown = true;
+                    break;
+                case Keys.Left:
+                    leftArrowDown = true;
+                    break;
+                case Keys.Down:
+                    downArrowDown = true;
+                    break;
+                case Keys.Right:
+                    rightArrowDown = true;
+                    break;
+                /*go to choose gamemode screen case Keys.B:
+                    if (gameState == "waiting" || gameState == "over")
+                    {
+                        gameState = "waiting";
+                        gameMode = "undefined";
+
+                        //add buttons
+                        p1Button.Visible = true;
+                        p1Button.Enabled = true;
+                        p2Button.Visible = true;
+                        p2Button.Enabled = true;
+                        Refresh();
+                    }
+                    break;*/
+            }
+        }
+
+        private void GameScreen_KeyUp(object sender, KeyEventArgs e)
+        {
+            switch (e.KeyCode)
+            {
+                /*second player controls case Keys.W:
+                    wDown = false;
+                    break;
+                case Keys.A:
+                    aDown = false;
+                    break;
+                case Keys.S:
+                    sDown = false;
+                    break;
+                case Keys.D:
+                    dDown = false;
+                    break;*/
+                case Keys.Up:
+                    upArrowDown = false;
+                    break;
+                case Keys.Left:
+                    leftArrowDown = false;
+                    break;
+                case Keys.Down:
+                    downArrowDown = false;
+                    break;
+                case Keys.Right:
+                    rightArrowDown = false;
+                    break;
+            }
         }
 
         private void gameTimer_Tick(object sender, EventArgs e)
         {
-            SetWalls();
+            //track previous position in case of reset
+            pacManPreviousX = pacMan.x;
+            pacManPreviousY = pacMan.y;
+
+            //move pacman in current direction
+            pacMan.Move();
+
+            //check for collision with wall in current direction
+            foreach(Rectangle w in walls)
+            {
+                pacMan.WallCollision(w);
+            }
+
+            //flip up/down or left/right
+            pacMan.FlipDirection(upArrowDown, rightArrowDown, downArrowDown, leftArrowDown);
+
+            //check for turn at a corner
+            foreach (Pellet t in turnPoints)
+            {
+                pacMan.Turn(upArrowDown, rightArrowDown, downArrowDown, leftArrowDown, t);
+            }
+
+            //check if pacman touches the end of a tunnel
+            pacMan.TunnelTeleport(this.Width);
+
+            //check if pacman collides with a pellet
+            foreach(Pellet p in pellets)
+            {
+                removePellet = pacMan.PelletCollision(p);
+                if(removePellet == true)
+                {
+                    pellets.Remove(p);
+                }
+            }
+
+            //check if pacman collides with energizer
+            PacManEnergizerCollision();
+
+            //blinky controls and collisions
+            blinkyPreviousX = blinky.X;
+            blinkyPreviousY = blinky.Y;
+
+            //move in current direction
+            MoveBlinky();
+
+            //check for change in direction
+            BlinkyAtonumousDirectionChange();
+
+            //check for collision with wall in current direction
+            BlinkyWallCollision();
+
+            //decrease time
+            time--;
+
+            //check for pacman & ghost collision in frightened mode
+            PacManGhostCollision();
+
+            //check for end game
+            CheckEndConditions();
+
             Refresh();
         }
 
+        /*
+         * 
+        public void PacManEnergizerCollision()
+        {
+            for (int i = 0; i < energizers.Count(); i++)
+            {
+                if (pacMan.IntersectsWith(energizers[i]))
+                {
+                    energizers.RemoveAt(i);
+                    ghostFrightened = true;
+                    blinkyBrush.Color = Color.AliceBlue;
+                    score += 10;
+                    energizerTimer = 50;
+                }
+            }
+
+            if (energizerTimer > 0)
+            {
+                energizerTimer--;
+            }
+            else
+            {
+                ghostFrightened = false;
+                blinkyBrush.Color = Color.Red;
+            }
+        }
+
+        /// <summary>
+        /// Checks current direction and moves Blinky
+        /// </summary>
+        public void MoveBlinky()
+        {
+            switch (blinkyDirection)
+            {
+                case "up":
+                    blinky.Y -= blinkySpeed;
+                    break;
+                case "left":
+                    blinky.X -= blinkySpeed;
+                    break;
+                case "down":
+                    blinky.Y += blinkySpeed;
+                    break;
+                case "right":
+                    blinky.X += blinkySpeed;
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Checks if Blinky collides with a wall in the current direction
+        /// </summary>
+        public void BlinkyWallCollision()
+        {
+            switch (blinkyDirection)
+            {
+                case "up":
+                    blinkyTop = new Rectangle(blinky.X, blinky.Y, 20, 1);
+                    for (int i = 0; i < walls.Count(); i++)
+                    {
+                        if (blinkyTop.IntersectsWith(walls[i]))
+                        {
+                            BlinkyWallCollisionReset();
+                        }
+                    }
+                    break;
+                case "left":
+                    blinkyLeft = new Rectangle(blinky.X, blinky.Y, 1, 20);
+                    for (int i = 0; i < walls.Count(); i++)
+                    {
+                        if (blinkyLeft.IntersectsWith(walls[i]))
+                        {
+                            BlinkyWallCollisionReset();
+                        }
+                    }
+                    break;
+                case "down":
+                    blinkyBottom = new Rectangle(blinky.X, blinky.Y + 15, 20, 1);
+                    for (int i = 0; i < walls.Count(); i++)
+                    {
+                        if (blinkyBottom.IntersectsWith(walls[i]))
+                        {
+                            BlinkyWallCollisionReset();
+                        }
+                    }
+                    break;
+                case "right":
+                    blinkyRight = new Rectangle(blinky.X + 15, blinky.Y, 1, 20);
+                    for (int i = 0; i < walls.Count(); i++)
+                    {
+                        if (blinkyRight.IntersectsWith(walls[i]))
+                        {
+                            BlinkyWallCollisionReset();
+                        }
+                    }
+                    break;
+            }
+
+            if (blinky.X <= 0 || blinky.X >= this.Width - blinky.Width)
+            {
+                if (gameMode == "1p")
+                {
+                    if (blinkyDirection == "left")
+                    {
+                        blinkyDirection = "right";
+                    }
+                    else
+                    {
+                        blinkyDirection = "left";
+                    }
+                }
+                else
+                {
+                    BlinkyWallCollisionReset();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Resets Blinky back to position before movement so it doesn't go into the wall and stops
+        /// </summary>
+        public void BlinkyWallCollisionReset()
+        {
+            blinky.X = blinkyPreviousX;
+            blinky.Y = blinkyPreviousY;
+            blinkySpeed = 0;
+        }
+
+        /// <summary>
+        /// Randomly decides new ghost direction, for 1p mode
+        /// </summary>
+        public void BlinkyAtonumousDirectionChange()
+        {
+            blinkyCentre = new Rectangle(blinky.X + 5, blinky.Y + 5, 10, 10);
+
+            //1 = up, 2 = left, 3 = down, 4 = right
+            for (int i = 0; i < turnPoints.Count(); i++)
+            {
+                if (blinkyCentre.IntersectsWith(turnPoints[i]))
+                {
+                    if (blinkyDirection == "up")
+                    {
+                        newGhostDirection = randGhostDirection.Next(2, 5);
+                    }
+                    else if (blinkyDirection == "left")
+                    {
+                        newGhostDirection = randGhostDirection.Next(1, 5);
+                        while (newGhostDirection == 2)
+                        {
+                            newGhostDirection = randGhostDirection.Next(1, 5);
+                        }
+                    }
+                    else if (blinkyDirection == "down")
+                    {
+                        newGhostDirection = randGhostDirection.Next(1, 4);
+                    }
+                    else if (blinkyDirection == "right")
+                    {
+                        newGhostDirection = randGhostDirection.Next(1, 5);
+                        while (newGhostDirection == 4)
+                        {
+                            newGhostDirection = randGhostDirection.Next(1, 5);
+                        }
+                    }
+
+                    SwitchGhostDirection();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Changes ghost direction
+        /// </summary>
+        public void SwitchGhostDirection()
+        {
+            switch (newGhostDirection)
+            {
+                case 1:
+                    blinkyDirection = "up";
+                    blinkySpeed = 10;
+                    break;
+                case 2:
+                    blinkyDirection = "left";
+                    blinkySpeed = 10;
+                    break;
+                case 3:
+                    blinkyDirection = "down";
+                    blinkySpeed = 10;
+                    break;
+                case 4:
+                    blinkyDirection = "right";
+                    blinkySpeed = 10;
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Checks if Pac-Man collides with a ghost in frightened mode, resets ghost and adds points
+        /// </summary>
+        public void PacManGhostCollision()
+        {
+            if (ghostFrightened == true && pacMan.IntersectsWith(blinky))
+            {
+                blinky.X = 205;
+                blinky.Y = 175;
+                blinkyDirection = "right";
+                blinkySpeed = 10;
+                score += 400;
+            }
+        }
+
+        /// <summary>
+        /// Ends game if time is up, all the pellet are gone, or blinky catches pacman
+        /// </summary>
+        public void CheckEndConditions()
+        {
+            if (gameMode == "1p" && time == 0)
+            {
+                outcome = "lose";
+                gameTimer.Enabled = false;
+                gameState = "over";
+            }
+            /*else if (gameMode == "2p" && blinky.IntersectsWith(pacMan) && ghostFrightened == true)
+            {
+                outcome = "p1win";
+                gameTimer.Enabled = false;
+                gameState = "over";
+            }
+            else if (blinky.IntersectsWith(pacMan) && ghostFrightened == false)
+            {
+                outcome = "p2win";
+                gameTimer.Enabled = false;
+                gameState = "over";
+            }
+            else if (pellets.Count() == 0)
+            {
+                outcome = "p1win";
+                gameTimer.Enabled = false;
+                gameState = "over";
+            }
+        }
+        */
+
         private void GameScreen_Paint(object sender, PaintEventArgs e)
         {
+            //update score
+            //scoreLabel.Text = $"SCORE: {score}";
+
+            //draw walls
             for (int i = 0; i < walls.Count(); i++)
             {
                 e.Graphics.FillRectangle(wallBrush, walls[i]);
             }
+
+            //draw pellets
+            foreach(Pellet p in pellets)
+            {
+                if(p.powerUp == false)
+                {
+                    e.Graphics.FillRectangle(Form1.pelletsBrush, p.x, p.y, p.size, p.size);
+                }
+                else
+                {
+                    e.Graphics.FillEllipse(Form1.pelletsBrush, p.x, p.y, p.size, p.size);
+                }
+            }
+
+            //draw pacman
+            //e.Graphics.FillPie(pacManBrush, pacMan, pacManStartAngle, 270);
+
+            //draw ghosts
+            /*e.Graphics.FillEllipse(blinkyBrush, blinky);
+            e.Graphics.FillEllipse(pinkyBrush, pinky);
+            e.Graphics.FillEllipse(inkyBrush, inky);
+            e.Graphics.FillEllipse(clydeBrush, clyde);*/
+
+            //update time
+            //timeLabel.Text = $"TIME LEFT: {time}";
         }
 
 
@@ -111,9 +596,348 @@ namespace Pac_Man2._0
             walls.Add(new Rectangle(150, 200, 130, 48));
         }
 
+        /// <summary>
+        /// Adds all the turn point rectangles to the turnPoints list
+        /// </summary>
+        public void SetTurnPoints()
+        {
+            //intersection points from top to bottom, left to right
+            int turnPointSize = 1;
+            //row 1
+            int turnPointY = 55;
+            turnPoints.Add(new Pellet(25, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(95, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(195, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(235, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(335, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(405, turnPointY, turnPointSize, false));
+
+            //row 2
+            turnPointY = 105;
+            TurnsRow2_X_Pattern(turnPointY, turnPointSize);
+
+            //row 3
+            turnPointY = 145;
+            TurnsRow2_X_Pattern(turnPointY, turnPointSize);
+
+            //row 4
+            turnPointY = 185;
+            turnPoints.Add(new Pellet(139, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(195, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(235, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(291, turnPointY, turnPointSize, false));
+
+            //row 5
+            turnPointY = 225;
+            turnPoints.Add(new Pellet(95, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(137, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(291, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(335, turnPointY, turnPointSize, false));
+
+            //row 6
+            turnPointY = 260;
+            turnPoints.Add(new Pellet(139, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(291, turnPointY, turnPointSize, false));
+
+            //row 7
+            turnPointY = 305;
+            TurnsRow2_X_Pattern(turnPointY, turnPointSize);
+
+            //row 8
+            turnPointY = 345;
+            TurnsRow8_X_Pattern(turnPointY, turnPointSize);
+
+            //row 9
+            turnPointY = 385;
+            TurnsRow8_X_Pattern(turnPointY, turnPointSize);
+
+            //row 10
+            turnPointY = 425;
+            turnPoints.Add(new Pellet(25, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(195, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(235, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(405, turnPointY, turnPointSize, false));
+        }
+
+        /// <summary>
+        /// Adds a series of rectangles in the same row to the turn points list, pattern in multiple rows
+        /// </summary>
+        /// <param name="turnPointY"></param>row y value
+        /// <param name="turnPointSize"></param>size of square point
+        public void TurnsRow2_X_Pattern(int turnPointY, int turnPointSize)
+        {
+            turnPoints.Add(new Pellet(25, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(95, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(139, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(195, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(235, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(291, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(335, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(405, turnPointY, turnPointSize, false));
+        }
+
+        /// <summary>
+        /// Adds a series of rectangles, same as row 2 + two more, in the same row to the turn points list, pattern in multiple rows
+        /// </summary>
+        /// <param name="turnPointY"></param>row y value
+        /// <param name="turnPointSize"></param>size of square point
+        public void TurnsRow8_X_Pattern(int turnPointY, int turnPointSize)
+        {
+            TurnsRow2_X_Pattern(turnPointY, turnPointSize);
+            turnPoints.Add(new Pellet(55, turnPointY, turnPointSize, false));
+            turnPoints.Add(new Pellet(375, turnPointY, turnPointSize, false));
+        }
+
+        /// <summary>
+        /// Adds all the pellet rectangles to the pellets list
+        /// </summary>
         public void SetPellets()
         {
+            //set energizers at the beginning of the list
+            //one in each corner
+            int pelletSize = 10;
+            pellets.Add(new Pellet(20, 50, pelletSize, true));
+            pellets.Add(new Pellet(400, 50, pelletSize, true));
+            pellets.Add(new Pellet(20, 420, pelletSize, true));
+            pellets.Add(new Pellet(400, 420, pelletSize, true));
 
+            pelletSize = 4;
+            //pellets top to bottom, left to right
+            //row 1
+            Row1_X_Pattern(53, pelletSize);
+
+            //row 2
+            Row2_X_Pattern(70, pelletSize);
+
+            //row 3
+            Row2_X_Pattern(86, pelletSize);
+
+            //row 4
+            Row4_X_Pattern(103, pelletSize);
+
+            //row 5
+            Row5_X_Pattern(123, pelletSize);
+
+            //row 6
+            Row6_X_Pattern(143, pelletSize);
+
+            // rows 7 - 15
+            Row7to15(pelletSize);
+
+            //row 16
+            Row1_X_Pattern(303, pelletSize);
+
+            //row 17
+            Row17_X_Pattern(323, pelletSize);
+
+            //row 18
+            Row18_X_Pattern(343, pelletSize);
+
+            //row 19
+            Row19_X_Pattern(363, pelletSize);
+
+            //row 20
+            Row6_X_Pattern(383, pelletSize);
+
+            //row 21
+            Row21_X_Pattern(403, pelletSize);
+
+            //row 22
+            Row4_X_Pattern(423, pelletSize);
+        }
+
+        /// <summary>
+        /// Adds a series of rectangles in the same row to the pellets list, pattern in multiple rows
+        /// </summary>
+        /// <param name="pelletY"></param>row y value
+        /// <param name="pelletSize"></param>square pellet value
+        public void Row1_X_Pattern(int pelletY, int pelletSize)
+        {
+            for (int i = 23; i <= 163; i += 14)
+            {
+                pellets.Add(new Pellet(i, pelletY, pelletSize, false));
+            }
+            pellets.Add(new Pellet(178, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(193, pelletY, pelletSize, false));
+            for (int i = 233; i <= 303; i += 14)
+            {
+                pellets.Add(new Pellet(i, pelletY, pelletSize, false));
+            }
+            pellets.Add(new Pellet(318, pelletY, pelletSize, false));
+            for (int i = 333; i <= 403; i += 14)
+            {
+                pellets.Add(new Pellet(i, pelletY, pelletSize, false));
+            }
+        }
+
+        /// <summary>
+        /// Adds a series of rectangles in the same row to the pellets list, pattern in multiple rows
+        /// </summary>
+        /// <param name="pelletY"></param>row y value
+        /// <param name="pelletSize"></param>square pellet value
+        public void Row2_X_Pattern(int pelletY, int pelletSize)
+        {
+            pellets.Add(new Pellet(23, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(93, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(193, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(233, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(333, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(403, pelletY, pelletSize, false));
+        }
+
+        /// <summary>
+        /// Adds a series of rectangles in the same row to the pellets list, pattern in multiple rows
+        /// </summary>
+        /// <param name="pelletY"></param>row y value
+        /// <param name="pelletSize"></param>square pellet value
+        public void Row4_X_Pattern(int pelletY, int pelletSize)
+        {
+            for (int i = 23; i <= 163; i += 14)
+            {
+                pellets.Add(new Pellet(i, pelletY, pelletSize, false));
+            }
+            pellets.Add(new Pellet(178, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(193, pelletY, pelletSize, false));
+
+            pellets.Add(new Pellet(207, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(221, pelletY, pelletSize, false));
+
+            for (int i = 233; i <= 303; i += 14)
+            {
+                pellets.Add(new Pellet(i, pelletY, pelletSize, false));
+            }
+            pellets.Add(new Pellet(318, pelletY, pelletSize, false));
+            for (int i = 333; i <= 403; i += 14)
+            {
+                pellets.Add(new Pellet(i, pelletY, pelletSize, false));
+            }
+        }
+
+        /// <summary>
+        /// Adds a series of rectangles in the same row to the pellets list, pattern in multiple rows
+        /// </summary>
+        /// <param name="pelletY"></param>row y value
+        /// <param name="pelletSize"></param>square pellet value
+        public void Row5_X_Pattern(int pelletY, int pelletSize)
+        {
+            pellets.Add(new Pellet(23, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(93, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(135, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(289, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(333, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(403, pelletY, pelletSize, false));
+        }
+
+        /// <summary>
+        /// Adds a series of rectangles in the same row to the pellets list, pattern in multiple rows
+        /// </summary>
+        /// <param name="pelletY"></param>row y value
+        /// <param name="pelletSize"></param>square pellet value
+        public void Row6_X_Pattern(int pelletY, int pelletSize)
+        {
+            for (int i = 23; i <= 93; i += 14)
+            {
+                pellets.Add(new Pellet(i, pelletY, pelletSize, false));
+            }
+            for (int i = 135; i <= 163; i += 14)
+            {
+                pellets.Add(new Pellet(i, pelletY, pelletSize, false));
+            }
+            pellets.Add(new Pellet(178, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(193, pelletY, pelletSize, false));
+            for (int i = 233; i <= 289; i += 14)
+            {
+                pellets.Add(new Pellet(i, pelletY, pelletSize, false));
+            }
+            for (int i = 333; i <= 403; i += 14)
+            {
+                pellets.Add(new Pellet(i, pelletY, pelletSize, false));
+            }
+        }
+
+        /// <summary>
+        /// Adds multiple rows with the same series of rectangles to the pellets list
+        /// </summary>
+        /// <param name="pelletSize"></param>square pellet value
+        public void Row7to15(int pelletSize)
+        {
+            for (int i = 159; i <= 287; i += 16)
+            {
+                pellets.Add(new Pellet(93, i, pelletSize, false));
+                pellets.Add(new Pellet(333, i, pelletSize, false));
+            }
+        }
+
+        /// <summary>
+        /// Adds a series of rectangles in the same row to the pellets list, pattern in multiple rows
+        /// </summary>
+        /// <param name="pelletY"></param>row y value
+        /// <param name="pelletSize"></param>square pellet value
+        public void Row17_X_Pattern(int pelletY, int pelletSize)
+        {
+            pellets.Add(new Pellet(23, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(93, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(193, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(233, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(333, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(403, pelletY, pelletSize, false));
+        }
+
+        /// <summary>
+        /// Adds a series of rectangles in the same row to the pellets list, pattern in multiple rows
+        /// </summary>
+        /// <param name="pelletY"></param>row y value
+        /// <param name="pelletSize"></param>square pellet value
+        public void Row18_X_Pattern(int pelletY, int pelletSize)
+        {
+            for (int i = 23; i <= 51; i += 14)
+            {
+                pellets.Add(new Pellet(i, pelletY, pelletSize, false));
+            }
+            for (int i = 93; i <= 163; i += 14)
+            {
+                pellets.Add(new Pellet(i, pelletY, pelletSize, false));
+            }
+            pellets.Add(new Pellet(178, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(193, pelletY, pelletSize, false));
+            for (int i = 233; i <= 303; i += 14)
+            {
+                pellets.Add(new Pellet(i, pelletY, pelletSize, false));
+            }
+            pellets.Add(new Pellet(318, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(333, pelletY, pelletSize, false));
+            for (int i = 375; i <= 403; i += 14)
+            {
+                pellets.Add(new Pellet(i, pelletY, pelletSize, false));
+            }
+        }
+
+        /// <summary>
+        /// Adds a series of rectangles in the same row to the pellets list, pattern in multiple rows
+        /// </summary>
+        /// <param name="pelletY"></param>row y value
+        /// <param name="pelletSize"></param>square pellet value
+        public void Row19_X_Pattern(int pelletY, int pelletSize)
+        {
+            pellets.Add(new Pellet(51, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(93, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(135, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(289, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(333, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(375, pelletY, pelletSize, false));
+        }
+
+        /// <summary>
+        /// Adds a series of rectangles in the same row to the pellets list, pattern in multiple rows
+        /// </summary>
+        /// <param name="pelletY"></param>row y value
+        /// <param name="pelletSize"></param>square pellet value
+        public void Row21_X_Pattern(int pelletY, int pelletSize)
+        {
+            pellets.Add(new Pellet(23, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(193, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(233, pelletY, pelletSize, false));
+            pellets.Add(new Pellet(403, pelletY, pelletSize, false));
         }
     }
 }

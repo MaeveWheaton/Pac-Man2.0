@@ -47,6 +47,8 @@ namespace Pac_Man2._0
             this.Name = "GameScreen";
             this.Size = new System.Drawing.Size(430, 470);
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.GameScreen_Paint);
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.GameScreen_KeyDown);
+            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.GameScreen_KeyUp);
             this.ResumeLayout(false);
 
         }
