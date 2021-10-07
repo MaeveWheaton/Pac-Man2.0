@@ -25,6 +25,7 @@ namespace Pac_Man2._0
         public static bool rightArrowDown;
 
         //create characters
+        Character[] ghosts = new Character[4];
         Character pacMan = new Character();
         Character blinky = new Character();
         Character pinky = new Character();
@@ -35,9 +36,10 @@ namespace Pac_Man2._0
 
         //game variables
         public static int score;
-        int time;
         bool removePellet;
         public static int energizerTimer;
+        int newGhostTimer;
+        int ghostIndex = 1;
 
         //brushes for ghosts and walls
         SolidBrush blinkyBrush = new SolidBrush(Color.Red);
@@ -45,6 +47,8 @@ namespace Pac_Man2._0
         SolidBrush inkyBrush = new SolidBrush(Color.LightBlue);
         SolidBrush clydeBrush = new SolidBrush(Color.Orange);
         SolidBrush wallBrush = new SolidBrush(Color.DodgerBlue);
+
+        SolidBrush writingBrush = new SolidBrush(Color.White);
 
         public GameScreen()
         {
@@ -60,9 +64,8 @@ namespace Pac_Man2._0
             //start music
             Form1.backgroundMusic.Play();
 
-            //reset time and score
-            //score = 0;
-            //time = 850;
+            //reset score
+            score = 0;
 
             //set up screen objects
             SetWalls();
@@ -74,10 +77,10 @@ namespace Pac_Man2._0
             pacMan = new Character("left", 205, 335, 20, 225, 10, Form1.pacManBrush);
 
             //set up ghosts
-            blinky = new Character("right", 205, 175, 20, 10, blinkyBrush);
-            pinky = new Character("right", 205, 215, 20, 0, pinkyBrush);
-            inky = new Character("right", 165, 215, 20, 0, inkyBrush);
-            clyde = new Character("right", 245, 215, 20, 0, clydeBrush);
+            ghosts[0] = blinky = new Character("right", 205, 175, 20, 10, blinkyBrush);
+            ghosts[1] = pinky = new Character("right", 205, 215, 20, 0, pinkyBrush);
+            ghosts[2] = inky = new Character("right", 165, 215, 20, 0, inkyBrush);
+            ghosts[3] = clyde = new Character("right", 245, 215, 20, 0, clydeBrush);
 
             ghostFrightened = false;
 
@@ -188,6 +191,12 @@ namespace Pac_Man2._0
 
         private void gameTimer_Tick(object sender, EventArgs e)
         {
+            //increase ghost timer if there are still ghost in the ghost house
+            if(ghostIndex < 4)
+            {
+                newGhostTimer++;
+            }
+
             //move pacman in current direction
             pacMan.Move();
 
@@ -227,42 +236,84 @@ namespace Pac_Man2._0
             //change visuals if ghost frightened
             if(ghostFrightened == true)
             {
-                blinky.GhostFrightened();
+                foreach(Character c in ghosts)
+                {
+                    c.GhostFrightened(true);
+                }
+
+                if (energizerTimer > 0)
+                {
+                    energizerTimer--;
+                }
+                else
+                {
+                    ghostFrightened = false;
+                }
+            }
+            else
+            {
+                foreach (Character c in ghosts)
+                {
+                    c.GhostFrightened(false);
+                }
             }
             
-            //move in current direction
-            blinky.Move();
+            //move ghosts in current direction
+            foreach(Character c in ghosts)
+            {
+                c.Move();
+            }
 
-            //check for change in direction
+            //change ghost direction at turnpoints
             foreach(Pellet t in turnPoints)
             {
-                blinky.AtonumousDirectionChange(t);
+                foreach(Character c in ghosts)
+                {
+                    c.AtonumousDirectionChange(t);
+                }
             }
 
             //check for collision with wall in current direction
             foreach(Rectangle w in walls)
             {
-                blinky.WallCollision(w);
+                foreach (Character c in ghosts)
+                {
+                    c.WallCollision(w);
+                }
             }
 
             //reverse ghost direction if it goes down the tunnel
-            if (blinky.x <= 0 || blinky.x >= this.Width - blinky.size)
+            foreach (Character c in ghosts)
             {
-                if (blinky.direction == "left")
+                if (c.x <= 0 || c.x >= this.Width - c.size)
                 {
-                    blinky.direction = "right";
-                }
-                else
-                {
-                    blinky.direction = "left";
+                    if (c.direction == "left")
+                    {
+                        c.direction = "right";
+                    }
+                    else
+                    {
+                        c.direction = "left";
+                    }
                 }
             }
 
-            //decrease time
-            time--;
-
             //check for pacman & ghost collision in frightened mode
-            blinky.PacManCollision(pacMan);
+            foreach (Character c in ghosts)
+            {
+                c.PacManCollision(pacMan);
+            }
+
+            //check if time for new ghost
+            if(newGhostTimer == 200 && ghostIndex < 4)
+            {
+                ghosts[ghostIndex].x = 205;
+                ghosts[ghostIndex].y = 175;
+                ghosts[ghostIndex].speed = 10;
+
+                ghostIndex++;
+                newGhostTimer = 0;
+            }
 
             //check for end game
             CheckEndConditions();
@@ -275,38 +326,35 @@ namespace Pac_Man2._0
         /// </summary>
         public void CheckEndConditions()
         {
-            if (time == 0)
+            //end if pacman collides with any of the ghosts
+            foreach(Character c in ghosts)
             {
-                //outcome = "lose";
-                gameTimer.Enabled = false;
+                if (c.IntersectsWith(pacMan) && ghostFrightened == false)
+                {
+                    //stop music
+                    Form1.backgroundMusic.Stop();
 
-                //change to game screen
-                Form f = this.FindForm();
-                f.Controls.Remove(this);
+                    //outcome = "p2win";
+                    gameTimer.Enabled = false;
 
-                MainScreen gs = new MainScreen();
-                f.Controls.Add(gs);
+                    //change to game screen
+                    Form f = this.FindForm();
+                    f.Controls.Remove(this);
 
-                //centre screen on the form
-                gs.Location = new Point((f.Width - gs.Width) / 2, (f.Height - gs.Height) / 2);
+                    MainScreen gs = new MainScreen();
+                    f.Controls.Add(gs);
+
+                    //centre screen on the form
+                    gs.Location = new Point((f.Width - gs.Width) / 2, (f.Height - gs.Height) / 2);
+                }
             }
-            else if (blinky.IntersectsWith(pacMan) && ghostFrightened == false)
+
+            //end if all pellets collected
+            if (pellets.Count() == 0)
             {
-                //outcome = "p2win";
-                gameTimer.Enabled = false;
+                //stop music
+                Form1.backgroundMusic.Stop();
 
-                //change to game screen
-                Form f = this.FindForm();
-                f.Controls.Remove(this);
-
-                MainScreen gs = new MainScreen();
-                f.Controls.Add(gs);
-
-                //centre screen on the form
-                gs.Location = new Point((f.Width - gs.Width) / 2, (f.Height - gs.Height) / 2);
-            }
-            else if (pellets.Count() == 0)
-            {
                 //outcome = "p1win";
                 gameTimer.Enabled = false;
 
@@ -325,7 +373,7 @@ namespace Pac_Man2._0
         private void GameScreen_Paint(object sender, PaintEventArgs e)
         {
             //update score
-            //scoreLabel.Text = $"SCORE: {score}";
+            e.Graphics.DrawString("SCORE: " + score.ToString(), DefaultFont, writingBrush, 5, 12);
 
             //draw walls
             for (int i = 0; i < walls.Count(); i++)
@@ -353,10 +401,7 @@ namespace Pac_Man2._0
             e.Graphics.FillEllipse(blinkyBrush, blinky.x, blinky.y, blinky.size, blinky.size);
             e.Graphics.FillEllipse(pinkyBrush, pinky.x, pinky.y, pinky.size, pinky.size);
             e.Graphics.FillEllipse(inkyBrush, inky.x, inky.y, inky.size, inky.size);
-            e.Graphics.FillEllipse(clydeBrush, clyde.x, clyde.y, clyde.size, clyde.size);
-
-            //update time
-            //timeLabel.Text = $"TIME LEFT: {time}";
+            e.Graphics.FillEllipse(clydeBrush, clyde.x, clyde.y, clyde.size, clyde.size);;
         }
 
 

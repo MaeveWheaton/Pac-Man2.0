@@ -155,19 +155,17 @@ namespace Pac_Man2._0
         /// <summary>
         /// Change colour of ghost while frightened
         /// </summary>
-        public void GhostFrightened()
+        public void GhostFrightened(bool frightened)
         {
-            colour.Color = frightenedColour;
-
-            if (GameScreen.energizerTimer > 0)
+            if(frightened == true)
             {
-                GameScreen.energizerTimer--;
+                colour.Color = frightenedColour;
             }
             else
             {
-                GameScreen.ghostFrightened = false;
                 colour.Color = origionalColour;
             }
+            
         }
 
         /// <summary>
