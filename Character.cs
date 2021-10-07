@@ -11,8 +11,13 @@ namespace Pac_Man2._0
     {
         public string direction;
         public int x, y, size, startAngle, speed, previousX, previousY;
-        public Rectangle top, left, bottom, right, centre, entireCharacter;
+        public Rectangle top, left, bottom, right, centre, entireCharacter, cRec, tRec;
         public SolidBrush colour;
+
+        Color frightenedColour = Color.AliceBlue;
+        Color origionalColour;
+        Random randGen = new Random();
+        int newGhostDirection;
 
         //for initializing the characters globally
         public Character()
@@ -41,10 +46,19 @@ namespace Pac_Man2._0
             direction = _direction;
             speed = _speed;
             colour = _colour;
+            origionalColour = colour.Color;
         }
 
+        /// <summary>
+        /// Moves character in current direction
+        /// </summary>
         public void Move()
         {
+            //track previous position in case of reset
+            previousX = x;
+            previousY = y;
+
+            //move in current direction
             switch (direction)
             {
                 case "up":
@@ -60,11 +74,12 @@ namespace Pac_Man2._0
                     x += speed;
                     break;
             }
-
-            previousX = x;
-            previousY = y;
         }
 
+        /// <summary>
+        /// Checks if character collides with a rectangle in current direction, if so sets speed = 0
+        /// </summary>
+        /// <param name="r"></param>rectangle
         public void WallCollision(Rectangle r)
         {
             switch (direction)
@@ -73,39 +88,41 @@ namespace Pac_Man2._0
                     top = new Rectangle(x, y, size, 1);
                     if (top.IntersectsWith(r))
                     {
-                        x = previousX;
-                        y = previousY;
-                        speed = 0;
+                        PositionReset();
                     }
                     break;
                 case "left":
                     left = new Rectangle(x, y, 1, size);
                     if (left.IntersectsWith(r))
                     {
-                        x = previousX;
-                        y = previousY;
-                        speed = 0;
+                        PositionReset();
                     }
                     break;
                 case "down":
                     bottom = new Rectangle(x, y + 15, size, 1);
                     if (bottom.IntersectsWith(r))
                     {
-                        x = previousX;
-                        y = previousY;
-                        speed = 0;
+                        PositionReset();
                     }
                     break;
                 case "right":
                     right = new Rectangle(x + 15, y, 1, 20);
                     if (right.IntersectsWith(r))
                     {
-                        x = previousX;
-                        y = previousY;
-                        speed = 0;
+                        PositionReset();
                     }
                     break;
             }
+        }
+
+        /// <summary>
+        /// Resets character to their previous position and set speed = 0
+        /// </summary>
+        public void PositionReset()
+        {
+            x = previousX;
+            y = previousY;
+            speed = 0;
         }
 
         /// <summary>
@@ -115,24 +132,13 @@ namespace Pac_Man2._0
         public bool PelletCollision(Pellet p)
         {
             entireCharacter = new Rectangle(x, y, size, size);
-            Rectangle pRec = new Rectangle(p.x, p.y, size, size);
+            Rectangle pRec = new Rectangle(p.x, p.y, p.size, p.size);
 
             if (entireCharacter.IntersectsWith(pRec) && p.powerUp == true)
             {
                 GameScreen.ghostFrightened = true;
-                blinkyBrush.Color = Color.AliceBlue;
-                score += 10;
+                GameScreen.score += 10;
                 GameScreen.energizerTimer = 50;
-
-                if (energizerTimer > 0)
-                {
-                    energizerTimer--;
-                }
-                else
-                {
-                    ghostFrightened = false;
-                    blinkyBrush.Color = Color.Red;
-                }
                 return (true);
             }
             else if (entireCharacter.IntersectsWith(pRec))
@@ -146,6 +152,31 @@ namespace Pac_Man2._0
             }
         }
 
+        /// <summary>
+        /// Change colour of ghost while frightened
+        /// </summary>
+        public void GhostFrightened()
+        {
+            colour.Color = frightenedColour;
+
+            if (GameScreen.energizerTimer > 0)
+            {
+                GameScreen.energizerTimer--;
+            }
+            else
+            {
+                GameScreen.ghostFrightened = false;
+                colour.Color = origionalColour;
+            }
+        }
+
+        /// <summary>
+        /// Changes to opposite direction of movement when key is pressed, does not allow turns
+        /// </summary>
+        /// <param name="upArrowDown"></param>bool of keyDown
+        /// <param name="rightArrowDown"></param>bool of keyDown
+        /// <param name="downArrowDown"></param>bool of keyDown
+        /// <param name="leftArrowDown"></param>bool of keyDown
         public void FlipDirection(bool upArrowDown, bool rightArrowDown, bool downArrowDown, bool leftArrowDown)
         {
             switch (direction)
@@ -186,12 +217,12 @@ namespace Pac_Man2._0
         }
 
         /// <summary>
-        /// Checks current direction and changes direction if key is pressed while at a turn point, can always reverse, changes PacMan pie start angle to face direction of movement
+        /// Checks current direction and changes direction if key is pressed while at a turn point, changes PacMan pie start angle to face direction of movement
         /// </summary>
         public void Turn(bool upArrowDown, bool rightArrowDown, bool downArrowDown, bool leftArrowDown, Pellet t)
         {
             centre = new Rectangle(x + 5, y + 5, 10, 10);
-            Rectangle tRec = new Rectangle(t.x, t.y, t.size, t.size);
+            tRec = new Rectangle(t.x, t.y, t.size, t.size);
 
             switch (direction)
             {
@@ -259,13 +290,116 @@ namespace Pac_Man2._0
         /// </summary>
         public void TunnelTeleport(int width)
         {
-            if (x == -5)
+            if (x <= -5)
             {
                 x = width - size - 5;
             }
-            else if (x == width - 7)
+            else if (x >= width - 7)
             {
                 x = 5;
+            }
+        }
+
+        /// <summary>
+        /// Randomly decides new ghost direction
+        /// </summary>
+        /// <param name="t"></param>turnpoint
+        public void AtonumousDirectionChange(Pellet t)
+        {
+            centre = new Rectangle(x + 5, y + 5, 10, 10);
+            tRec = new Rectangle(t.x, t.y, t.size, t.size);
+
+            //1 = up, 2 = left, 3 = down, 4 = right
+            if (centre.IntersectsWith(tRec))
+            {
+                if (direction == "up")
+                {
+                    newGhostDirection = randGen.Next(2, 5);
+                }
+                else if (direction == "left")
+                {
+                    newGhostDirection = randGen.Next(1, 5);
+                    while (newGhostDirection == 2)
+                    {
+                        newGhostDirection = randGen.Next(1, 5);
+                    }
+                }
+                else if (direction == "down")
+                {
+                    newGhostDirection = randGen.Next(1, 4);
+                }
+                else if (direction == "right")
+                {
+                    newGhostDirection = randGen.Next(1, 5);
+                    while (newGhostDirection == 4)
+                    {
+                        newGhostDirection = randGen.Next(1, 5);
+                    }
+                }
+
+                SwitchGhostDirection();
+            }
+        }
+
+        /// <summary>
+        /// Changes ghost direction
+        /// </summary>
+        public void SwitchGhostDirection()
+        {
+            switch (newGhostDirection)
+            {
+                case 1:
+                    direction = "up";
+                    break;
+                case 2:
+                    direction = "left";
+                    break;
+                case 3:
+                    direction = "down";
+                    break;
+                case 4:
+                    direction = "right";
+                    break;
+            }
+
+            speed = 10;
+        }
+
+        /// <summary>
+        /// Checks if Pac-Man collides with a ghost in frightened mode, resets ghost and adds points
+        /// </summary>
+        public void PacManCollision(Character c)
+        {
+            entireCharacter = new Rectangle(x, y, size, size);
+            cRec = new Rectangle(c.x, c.y, c.size, c.size);
+
+            if (GameScreen.ghostFrightened == true && entireCharacter.IntersectsWith(cRec))
+            {
+                x = 205;
+                y = 175;
+                direction = "right";
+                speed = 10;
+                GameScreen.score += 400;
+            }
+        }
+
+        /// <summary>
+        /// Check if one character intersects with another character
+        /// </summary>
+        /// <param name="c"></param>character intersecting
+        /// <returns></returns>true or false
+        public bool IntersectsWith(Character c)
+        {
+            entireCharacter = new Rectangle(x, y, size, size);
+            cRec = new Rectangle(c.x, c.y, c.size, c.size);
+
+            if (entireCharacter.IntersectsWith(cRec))
+            {
+                return (true);
+            }
+            else
+            {
+                return (false);
             }
         }
     }

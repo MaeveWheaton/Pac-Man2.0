@@ -65,7 +65,7 @@ namespace Pac_Man2._0
             this.Name = "MainScreen";
             this.Size = new System.Drawing.Size(860, 940);
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.MainScreen_Paint);
-            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainScreen_KeyDown);
+            this.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.MainScreen_PreviewKeyDown);
             this.ResumeLayout(false);
             this.PerformLayout();
 

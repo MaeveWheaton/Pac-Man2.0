@@ -34,7 +34,7 @@ namespace Pac_Man2._0
             e.Graphics.FillEllipse(Form1.pelletsBrush, pelletX + 90, pelletY, 10, 10);
         }
 
-        private void MainScreen_KeyDown(object sender, KeyEventArgs e)
+        private void MainScreen_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
             switch (e.KeyCode)
             {

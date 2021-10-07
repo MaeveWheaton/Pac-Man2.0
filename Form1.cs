@@ -2,7 +2,8 @@
  * Maeve Wheaton
  * Mr. T
  * October 4, 2021
- * Pac-Man game, player must collect all the pellets on the screen without being caught by a ghost.
+ * Pac-Man game, player must collect all the pellets on the screen without being caught by a ghost. 
+ * Collecting any of the four energizers, one in each corner, will allow the player to catch the ghosts for extra points for a couple of seconds.
 */
 
 using System;

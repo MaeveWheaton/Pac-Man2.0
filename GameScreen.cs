@@ -13,15 +13,16 @@ namespace Pac_Man2._0
     public partial class GameScreen : UserControl
     {
         List<Pellet> pellets = new List<Pellet>();
+        List<Pellet> toRemovePellets = new List<Pellet>();
         List<Pellet> turnPoints = new List<Pellet>();
         //List<Character> ghosts = new List<Character>();
         List<Rectangle> walls = new List<Rectangle>();
 
         //player control variables
-        bool upArrowDown;
-        bool leftArrowDown;
-        bool downArrowDown;
-        bool rightArrowDown;
+        public static bool upArrowDown;
+        public static bool leftArrowDown;
+        public static bool downArrowDown;
+        public static bool rightArrowDown;
 
         //create characters
         Character pacMan = new Character();
@@ -30,10 +31,11 @@ namespace Pac_Man2._0
         Character inky = new Character();
         Character clyde = new Character();
         int pacManPreviousX, pacManPreviousY;
-        bool ghostFrightened;
+        public static bool ghostFrightened;
 
         //game variables
         public static int score;
+        int time;
         bool removePellet;
         public static int energizerTimer;
 
@@ -108,7 +110,7 @@ namespace Pac_Man2._0
             countDownLabel.Visible = false;
         }*/
 
-        private void GameScreen_KeyDown(object sender, KeyEventArgs e)
+        private void GameScreen_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
             switch (e.KeyCode)
             {
@@ -136,20 +138,20 @@ namespace Pac_Man2._0
                 case Keys.Right:
                     rightArrowDown = true;
                     break;
-                /*go to choose gamemode screen case Keys.B:
-                    if (gameState == "waiting" || gameState == "over")
-                    {
-                        gameState = "waiting";
-                        gameMode = "undefined";
+                    /*go to choose gamemode screen case Keys.B:
+                        if (gameState == "waiting" || gameState == "over")
+                        {
+                            gameState = "waiting";
+                            gameMode = "undefined";
 
-                        //add buttons
-                        p1Button.Visible = true;
-                        p1Button.Enabled = true;
-                        p2Button.Visible = true;
-                        p2Button.Enabled = true;
-                        Refresh();
-                    }
-                    break;*/
+                            //add buttons
+                            p1Button.Visible = true;
+                            p1Button.Enabled = true;
+                            p2Button.Visible = true;
+                            p2Button.Enabled = true;
+                            Refresh();
+                        }
+                        break;*/
             }
         }
 
@@ -186,10 +188,6 @@ namespace Pac_Man2._0
 
         private void gameTimer_Tick(object sender, EventArgs e)
         {
-            //track previous position in case of reset
-            pacManPreviousX = pacMan.x;
-            pacManPreviousY = pacMan.y;
-
             //move pacman in current direction
             pacMan.Move();
 
@@ -211,37 +209,60 @@ namespace Pac_Man2._0
             //check if pacman touches the end of a tunnel
             pacMan.TunnelTeleport(this.Width);
 
-            //check if pacman collides with a pellet
-            foreach(Pellet p in pellets)
+            //check if pacman collides with a pellet or energizer, if so remove pellet
+            foreach (Pellet p in pellets)
             {
                 removePellet = pacMan.PelletCollision(p);
                 if(removePellet == true)
                 {
-                    pellets.Remove(p);
+                    toRemovePellets.Add(p);
                 }
             }
 
-            //check if pacman collides with energizer
-            PacManEnergizerCollision();
+            foreach (Pellet p in toRemovePellets)
+            {
+                pellets.Remove(p);
+            }
 
-            //blinky controls and collisions
-            blinkyPreviousX = blinky.X;
-            blinkyPreviousY = blinky.Y;
-
+            //change visuals if ghost frightened
+            if(ghostFrightened == true)
+            {
+                blinky.GhostFrightened();
+            }
+            
             //move in current direction
-            MoveBlinky();
+            blinky.Move();
 
             //check for change in direction
-            BlinkyAtonumousDirectionChange();
+            foreach(Pellet t in turnPoints)
+            {
+                blinky.AtonumousDirectionChange(t);
+            }
 
             //check for collision with wall in current direction
-            BlinkyWallCollision();
+            foreach(Rectangle w in walls)
+            {
+                blinky.WallCollision(w);
+            }
+
+            //reverse ghost direction if it goes down the tunnel
+            if (blinky.x <= 0 || blinky.x >= this.Width - blinky.size)
+            {
+                if (blinky.direction == "left")
+                {
+                    blinky.direction = "right";
+                }
+                else
+                {
+                    blinky.direction = "left";
+                }
+            }
 
             //decrease time
             time--;
 
             //check for pacman & ghost collision in frightened mode
-            PacManGhostCollision();
+            blinky.PacManCollision(pacMan);
 
             //check for end game
             CheckEndConditions();
@@ -249,248 +270,57 @@ namespace Pac_Man2._0
             Refresh();
         }
 
-        /*
-         * 
-        public void PacManEnergizerCollision()
-        {
-            for (int i = 0; i < energizers.Count(); i++)
-            {
-                if (pacMan.IntersectsWith(energizers[i]))
-                {
-                    energizers.RemoveAt(i);
-                    ghostFrightened = true;
-                    blinkyBrush.Color = Color.AliceBlue;
-                    score += 10;
-                    energizerTimer = 50;
-                }
-            }
-
-            if (energizerTimer > 0)
-            {
-                energizerTimer--;
-            }
-            else
-            {
-                ghostFrightened = false;
-                blinkyBrush.Color = Color.Red;
-            }
-        }
-
-        /// <summary>
-        /// Checks current direction and moves Blinky
-        /// </summary>
-        public void MoveBlinky()
-        {
-            switch (blinkyDirection)
-            {
-                case "up":
-                    blinky.Y -= blinkySpeed;
-                    break;
-                case "left":
-                    blinky.X -= blinkySpeed;
-                    break;
-                case "down":
-                    blinky.Y += blinkySpeed;
-                    break;
-                case "right":
-                    blinky.X += blinkySpeed;
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// Checks if Blinky collides with a wall in the current direction
-        /// </summary>
-        public void BlinkyWallCollision()
-        {
-            switch (blinkyDirection)
-            {
-                case "up":
-                    blinkyTop = new Rectangle(blinky.X, blinky.Y, 20, 1);
-                    for (int i = 0; i < walls.Count(); i++)
-                    {
-                        if (blinkyTop.IntersectsWith(walls[i]))
-                        {
-                            BlinkyWallCollisionReset();
-                        }
-                    }
-                    break;
-                case "left":
-                    blinkyLeft = new Rectangle(blinky.X, blinky.Y, 1, 20);
-                    for (int i = 0; i < walls.Count(); i++)
-                    {
-                        if (blinkyLeft.IntersectsWith(walls[i]))
-                        {
-                            BlinkyWallCollisionReset();
-                        }
-                    }
-                    break;
-                case "down":
-                    blinkyBottom = new Rectangle(blinky.X, blinky.Y + 15, 20, 1);
-                    for (int i = 0; i < walls.Count(); i++)
-                    {
-                        if (blinkyBottom.IntersectsWith(walls[i]))
-                        {
-                            BlinkyWallCollisionReset();
-                        }
-                    }
-                    break;
-                case "right":
-                    blinkyRight = new Rectangle(blinky.X + 15, blinky.Y, 1, 20);
-                    for (int i = 0; i < walls.Count(); i++)
-                    {
-                        if (blinkyRight.IntersectsWith(walls[i]))
-                        {
-                            BlinkyWallCollisionReset();
-                        }
-                    }
-                    break;
-            }
-
-            if (blinky.X <= 0 || blinky.X >= this.Width - blinky.Width)
-            {
-                if (gameMode == "1p")
-                {
-                    if (blinkyDirection == "left")
-                    {
-                        blinkyDirection = "right";
-                    }
-                    else
-                    {
-                        blinkyDirection = "left";
-                    }
-                }
-                else
-                {
-                    BlinkyWallCollisionReset();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Resets Blinky back to position before movement so it doesn't go into the wall and stops
-        /// </summary>
-        public void BlinkyWallCollisionReset()
-        {
-            blinky.X = blinkyPreviousX;
-            blinky.Y = blinkyPreviousY;
-            blinkySpeed = 0;
-        }
-
-        /// <summary>
-        /// Randomly decides new ghost direction, for 1p mode
-        /// </summary>
-        public void BlinkyAtonumousDirectionChange()
-        {
-            blinkyCentre = new Rectangle(blinky.X + 5, blinky.Y + 5, 10, 10);
-
-            //1 = up, 2 = left, 3 = down, 4 = right
-            for (int i = 0; i < turnPoints.Count(); i++)
-            {
-                if (blinkyCentre.IntersectsWith(turnPoints[i]))
-                {
-                    if (blinkyDirection == "up")
-                    {
-                        newGhostDirection = randGhostDirection.Next(2, 5);
-                    }
-                    else if (blinkyDirection == "left")
-                    {
-                        newGhostDirection = randGhostDirection.Next(1, 5);
-                        while (newGhostDirection == 2)
-                        {
-                            newGhostDirection = randGhostDirection.Next(1, 5);
-                        }
-                    }
-                    else if (blinkyDirection == "down")
-                    {
-                        newGhostDirection = randGhostDirection.Next(1, 4);
-                    }
-                    else if (blinkyDirection == "right")
-                    {
-                        newGhostDirection = randGhostDirection.Next(1, 5);
-                        while (newGhostDirection == 4)
-                        {
-                            newGhostDirection = randGhostDirection.Next(1, 5);
-                        }
-                    }
-
-                    SwitchGhostDirection();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Changes ghost direction
-        /// </summary>
-        public void SwitchGhostDirection()
-        {
-            switch (newGhostDirection)
-            {
-                case 1:
-                    blinkyDirection = "up";
-                    blinkySpeed = 10;
-                    break;
-                case 2:
-                    blinkyDirection = "left";
-                    blinkySpeed = 10;
-                    break;
-                case 3:
-                    blinkyDirection = "down";
-                    blinkySpeed = 10;
-                    break;
-                case 4:
-                    blinkyDirection = "right";
-                    blinkySpeed = 10;
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// Checks if Pac-Man collides with a ghost in frightened mode, resets ghost and adds points
-        /// </summary>
-        public void PacManGhostCollision()
-        {
-            if (ghostFrightened == true && pacMan.IntersectsWith(blinky))
-            {
-                blinky.X = 205;
-                blinky.Y = 175;
-                blinkyDirection = "right";
-                blinkySpeed = 10;
-                score += 400;
-            }
-        }
-
         /// <summary>
         /// Ends game if time is up, all the pellet are gone, or blinky catches pacman
         /// </summary>
         public void CheckEndConditions()
         {
-            if (gameMode == "1p" && time == 0)
+            if (time == 0)
             {
-                outcome = "lose";
+                //outcome = "lose";
                 gameTimer.Enabled = false;
-                gameState = "over";
-            }
-            /*else if (gameMode == "2p" && blinky.IntersectsWith(pacMan) && ghostFrightened == true)
-            {
-                outcome = "p1win";
-                gameTimer.Enabled = false;
-                gameState = "over";
+
+                //change to game screen
+                Form f = this.FindForm();
+                f.Controls.Remove(this);
+
+                MainScreen gs = new MainScreen();
+                f.Controls.Add(gs);
+
+                //centre screen on the form
+                gs.Location = new Point((f.Width - gs.Width) / 2, (f.Height - gs.Height) / 2);
             }
             else if (blinky.IntersectsWith(pacMan) && ghostFrightened == false)
             {
-                outcome = "p2win";
+                //outcome = "p2win";
                 gameTimer.Enabled = false;
-                gameState = "over";
+
+                //change to game screen
+                Form f = this.FindForm();
+                f.Controls.Remove(this);
+
+                MainScreen gs = new MainScreen();
+                f.Controls.Add(gs);
+
+                //centre screen on the form
+                gs.Location = new Point((f.Width - gs.Width) / 2, (f.Height - gs.Height) / 2);
             }
             else if (pellets.Count() == 0)
             {
-                outcome = "p1win";
+                //outcome = "p1win";
                 gameTimer.Enabled = false;
-                gameState = "over";
+
+                //change to game screen
+                Form f = this.FindForm();
+                f.Controls.Remove(this);
+
+                MainScreen gs = new MainScreen();
+                f.Controls.Add(gs);
+
+                //centre screen on the form
+                gs.Location = new Point((f.Width - gs.Width) / 2, (f.Height - gs.Height) / 2);
             }
         }
-        */
 
         private void GameScreen_Paint(object sender, PaintEventArgs e)
         {
@@ -517,13 +347,13 @@ namespace Pac_Man2._0
             }
 
             //draw pacman
-            //e.Graphics.FillPie(pacManBrush, pacMan, pacManStartAngle, 270);
+            e.Graphics.FillPie(pacMan.colour, pacMan.x, pacMan.y, pacMan.size, pacMan.size, pacMan.startAngle, 270);
 
             //draw ghosts
-            /*e.Graphics.FillEllipse(blinkyBrush, blinky);
-            e.Graphics.FillEllipse(pinkyBrush, pinky);
-            e.Graphics.FillEllipse(inkyBrush, inky);
-            e.Graphics.FillEllipse(clydeBrush, clyde);*/
+            e.Graphics.FillEllipse(blinkyBrush, blinky.x, blinky.y, blinky.size, blinky.size);
+            e.Graphics.FillEllipse(pinkyBrush, pinky.x, pinky.y, pinky.size, pinky.size);
+            e.Graphics.FillEllipse(inkyBrush, inky.x, inky.y, inky.size, inky.size);
+            e.Graphics.FillEllipse(clydeBrush, clyde.x, clyde.y, clyde.size, clyde.size);
 
             //update time
             //timeLabel.Text = $"TIME LEFT: {time}";
