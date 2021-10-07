@@ -346,6 +346,7 @@ namespace Pac_Man2._0
 
                     //centre screen on the form
                     gs.Location = new Point((f.Width - gs.Width) / 2, (f.Height - gs.Height) / 2);
+                    gs.Focus();
                 }
             }
 
@@ -367,6 +368,7 @@ namespace Pac_Man2._0
 
                 //centre screen on the form
                 gs.Location = new Point((f.Width - gs.Width) / 2, (f.Height - gs.Height) / 2);
+                gs.Focus();
             }
         }
 

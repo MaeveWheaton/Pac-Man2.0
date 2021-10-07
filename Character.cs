@@ -138,7 +138,7 @@ namespace Pac_Man2._0
             {
                 GameScreen.ghostFrightened = true;
                 GameScreen.score += 10;
-                GameScreen.energizerTimer = 50;
+                GameScreen.energizerTimer = 100;
                 return (true);
             }
             else if (entireCharacter.IntersectsWith(pRec))
