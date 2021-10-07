@@ -103,5 +103,11 @@
   <ItemGroup>
     <None Include="Resources\background-music.wav" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\415079__harrietniamh__video-game-death-sound-effect.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\467240__jay-you__music-elevator-ext.wav" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

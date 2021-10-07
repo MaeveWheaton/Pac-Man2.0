@@ -68,5 +68,23 @@ namespace Pac_Man2._0.Properties {
                 return ResourceManager.GetStream("background_music", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.IO.UnmanagedMemoryStream similar to System.IO.MemoryStream.
+        /// </summary>
+        internal static System.IO.UnmanagedMemoryStream game_over {
+            get {
+                return ResourceManager.GetStream("game_over", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.IO.UnmanagedMemoryStream similar to System.IO.MemoryStream.
+        /// </summary>
+        internal static System.IO.UnmanagedMemoryStream menu_music {
+            get {
+                return ResourceManager.GetStream("menu_music", resourceCulture);
+            }
+        }
     }
 }

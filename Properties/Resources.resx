@@ -121,4 +121,10 @@
   <data name="background_music" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\background-music.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="game_over" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\415079__harrietniamh__video-game-death-sound-effect.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="menu_music" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\467240__jay-you__music-elevator-ext.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
 </root>

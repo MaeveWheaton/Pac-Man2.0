@@ -24,6 +24,8 @@ namespace Pac_Man2._0
         public static SolidBrush pacManBrush = new SolidBrush(Color.Yellow);
         public static SolidBrush pelletsBrush = new SolidBrush(Color.PapayaWhip);
         public static SoundPlayer backgroundMusic = new SoundPlayer(Properties.Resources.background_music);
+        public static SoundPlayer menuMusic = new SoundPlayer(Properties.Resources.menu_music);
+        public static SoundPlayer gameOverSound = new SoundPlayer(Properties.Resources.game_over);
 
         public Form1()
         {

@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Pac_Man2._0
@@ -222,7 +223,7 @@ namespace Pac_Man2._0
             foreach (Pellet p in pellets)
             {
                 removePellet = pacMan.PelletCollision(p);
-                if(removePellet == true)
+                if(removePellet)
                 {
                     toRemovePellets.Add(p);
                 }
@@ -331,45 +332,43 @@ namespace Pac_Man2._0
             {
                 if (c.IntersectsWith(pacMan) && ghostFrightened == false)
                 {
-                    //stop music
-                    Form1.backgroundMusic.Stop();
-
                     //outcome = "p2win";
-                    gameTimer.Enabled = false;
-
-                    //change to game screen
-                    Form f = this.FindForm();
-                    f.Controls.Remove(this);
-
-                    MainScreen gs = new MainScreen();
-                    f.Controls.Add(gs);
-
-                    //centre screen on the form
-                    gs.Location = new Point((f.Width - gs.Width) / 2, (f.Height - gs.Height) / 2);
-                    gs.Focus();
+                    GameOver();
                 }
             }
 
             //end if all pellets collected
             if (pellets.Count() == 0)
             {
-                //stop music
-                Form1.backgroundMusic.Stop();
-
                 //outcome = "p1win";
-                gameTimer.Enabled = false;
-
-                //change to game screen
-                Form f = this.FindForm();
-                f.Controls.Remove(this);
-
-                MainScreen gs = new MainScreen();
-                f.Controls.Add(gs);
-
-                //centre screen on the form
-                gs.Location = new Point((f.Width - gs.Width) / 2, (f.Height - gs.Height) / 2);
-                gs.Focus();
+                GameOver();
             }
+        }
+
+        public void GameOver()
+        {
+            //stop music
+            Form1.backgroundMusic.Stop();
+
+            //play gameover sound
+            Form1.gameOverSound.Play();
+
+            //stop game
+            gameTimer.Enabled = false;
+
+            //give time for sound to play before changing screens
+            Thread.Sleep(1500);
+
+            //change to main screen
+            Form f = this.FindForm();
+            f.Controls.Remove(this);
+
+            MainScreen gs = new MainScreen();
+            f.Controls.Add(gs);
+
+            //centre screen on the form
+            gs.Location = new Point((f.Width - gs.Width) / 2, (f.Height - gs.Height) / 2);
+            gs.Focus();
         }
 
         private void GameScreen_Paint(object sender, PaintEventArgs e)
@@ -386,13 +385,13 @@ namespace Pac_Man2._0
             //draw pellets
             foreach(Pellet p in pellets)
             {
-                if(p.powerUp == false)
+                if(p.powerUp)
                 {
-                    e.Graphics.FillRectangle(Form1.pelletsBrush, p.x, p.y, p.size, p.size);
+                    e.Graphics.FillEllipse(Form1.pelletsBrush, p.x, p.y, p.size, p.size);
                 }
                 else
                 {
-                    e.Graphics.FillEllipse(Form1.pelletsBrush, p.x, p.y, p.size, p.size);
+                    e.Graphics.FillRectangle(Form1.pelletsBrush, p.x, p.y, p.size, p.size);
                 }
             }
 

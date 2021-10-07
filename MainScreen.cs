@@ -19,6 +19,7 @@ namespace Pac_Man2._0
         public MainScreen()
         {
             InitializeComponent();
+            Form1.menuMusic.Play();
         }
         
         private void MainScreen_Paint(object sender, PaintEventArgs e)

@@ -131,22 +131,24 @@ namespace Pac_Man2._0
         /// </summary>
         public bool PelletCollision(Pellet p)
         {
+            //rectangles for collision
             entireCharacter = new Rectangle(x, y, size, size);
             Rectangle pRec = new Rectangle(p.x, p.y, p.size, p.size);
 
-            if (entireCharacter.IntersectsWith(pRec) && p.powerUp == true)
+            //check collision
+            if (entireCharacter.IntersectsWith(pRec) && p.powerUp == true) //collision with energizer
             {
                 GameScreen.ghostFrightened = true;
                 GameScreen.score += 10;
                 GameScreen.energizerTimer = 100;
                 return (true);
             }
-            else if (entireCharacter.IntersectsWith(pRec))
+            else if (entireCharacter.IntersectsWith(pRec)) //collision with normal pellet
             {
                 GameScreen.score += 10;
                 return (true);
             }
-            else
+            else //no collision
             {
                 return (false);
             }
@@ -157,7 +159,8 @@ namespace Pac_Man2._0
         /// </summary>
         public void GhostFrightened(bool frightened)
         {
-            if(frightened == true)
+            //change the colour of the ghosts while frightened
+            if(frightened)
             {
                 colour.Color = frightenedColour;
             }
@@ -177,6 +180,7 @@ namespace Pac_Man2._0
         /// <param name="leftArrowDown"></param>bool of keyDown
         public void FlipDirection(bool upArrowDown, bool rightArrowDown, bool downArrowDown, bool leftArrowDown)
         {
+            //switch to opposite direction if key pressed
             switch (direction)
             {
                 case "up":
